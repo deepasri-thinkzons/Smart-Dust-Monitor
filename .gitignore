@@ -1,0 +1,14 @@
+__pycache__/
+*.py[cod]
+
+venv/
+.venv/
+python/venv/
+python/.venv/
+
+.env
+.env.*
+!.env.example
+
+data/sensor.db
+data/sensor.db-*

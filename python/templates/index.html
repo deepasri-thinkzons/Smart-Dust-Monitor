@@ -1,0 +1,2143 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>MQ-135 AI Command Center</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+
+        :root {
+            --bg: #07101c;
+            --bg2: #0a1725;
+            --card: rgba(13, 27, 42, 0.88);
+            --card2: rgba(18, 36, 54, 0.88);
+            --line: #1e3448;
+            --txt: #e8f0f7;
+            --muted: #91a6b8;
+
+            --accent: #55d6be;
+            --accent2: #4da3ff;
+
+            --good: #55d6be;
+            --warn: #ffca64;
+            --bad: #ff6b6b;
+            --critical: #ff3b5c;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            background:
+                radial-gradient(
+                    circle at top,
+                    #132b42 0%,
+                    #07101c 55%,
+                    #040a12 100%
+                );
+
+            font-family:
+                Inter,
+                "Segoe UI",
+                Arial,
+                sans-serif;
+
+            color: var(--txt);
+            min-height: 100vh;
+        }
+
+        header {
+            padding: 24px 5%;
+
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+
+            border-bottom: 1px solid var(--line);
+
+            background: rgba(7, 16, 28, 0.75);
+
+            backdrop-filter: blur(15px);
+
+            position: sticky;
+            top: 0;
+
+            z-index: 100;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 25px;
+            letter-spacing: 0.3px;
+        }
+
+        h2 {
+            margin-top: 0;
+        }
+
+        h3 {
+            margin-bottom: 8px;
+        }
+
+        small,
+        .muted {
+            color: var(--muted);
+        }
+
+        main {
+            padding: 24px 5%;
+            max-width: 1500px;
+            margin: auto;
+        }
+
+        /* =========================================
+           STATUS HEADER
+        ========================================= */
+
+        .pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+
+            border: 1px solid var(--line);
+
+            padding: 6px 11px;
+
+            border-radius: 20px;
+
+            font-size: 12px;
+
+            background: rgba(255,255,255,0.03);
+        }
+
+        .online {
+            border-color: var(--good);
+            color: var(--good);
+        }
+
+        .offline {
+            border-color: var(--bad);
+            color: var(--bad);
+        }
+
+        /* =========================================
+           CARDS
+        ========================================= */
+
+        .card {
+            background: var(--card);
+
+            border: 1px solid var(--line);
+
+            border-radius: 18px;
+
+            padding: 18px;
+
+            box-shadow:
+                0 12px 35px rgba(0,0,0,.22);
+
+            backdrop-filter: blur(12px);
+        }
+
+        .grid {
+            display: grid;
+
+            grid-template-columns:
+                repeat(4, 1fr);
+
+            gap: 16px;
+        }
+
+        .value {
+            font-size: 30px;
+
+            font-weight: 700;
+
+            margin-top: 8px;
+        }
+
+        .status {
+            font-weight: 700;
+        }
+
+        .section {
+            margin-top: 18px;
+        }
+
+        /* =========================================
+           LIVE INDICATOR
+        ========================================= */
+
+        .live-row {
+            display: flex;
+
+            justify-content: space-between;
+
+            align-items: center;
+
+            margin-bottom: 12px;
+        }
+
+        .live-dot {
+            width: 9px;
+            height: 9px;
+
+            border-radius: 50%;
+
+            display: inline-block;
+
+            margin-right: 6px;
+
+            background: var(--good);
+
+            box-shadow:
+                0 0 10px var(--good);
+        }
+
+        /* =========================================
+           BUTTONS
+        ========================================= */
+
+        .links {
+            display: flex;
+
+            gap: 8px;
+
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            background: #102a3d;
+
+            border: 1px solid #2b536d;
+
+            color: var(--txt);
+
+            padding: 9px 13px;
+
+            border-radius: 10px;
+
+            cursor: pointer;
+
+            transition: .2s;
+        }
+
+        .btn:hover {
+            border-color: var(--accent);
+
+            transform: translateY(-1px);
+        }
+
+        .btn:disabled {
+            opacity: .5;
+
+            cursor: wait;
+
+            transform: none;
+        }
+
+        .btn-ai {
+            background:
+                linear-gradient(
+                    135deg,
+                    #123d4a,
+                    #15314d
+                );
+
+            border-color: var(--accent);
+        }
+
+        /* =========================================
+           AI SECTION
+        ========================================= */
+
+        .ai-header {
+            display: flex;
+
+            justify-content: space-between;
+
+            align-items: center;
+
+            gap: 15px;
+
+            flex-wrap: wrap;
+        }
+
+        .ai-title {
+            display: flex;
+
+            align-items: center;
+
+            gap: 12px;
+        }
+
+        .ai-icon {
+            width: 44px;
+            height: 44px;
+
+            display: flex;
+
+            align-items: center;
+            justify-content: center;
+
+            border-radius: 14px;
+
+            background:
+                linear-gradient(
+                    135deg,
+                    #123d4a,
+                    #172d4c
+                );
+
+            border: 1px solid var(--accent);
+
+            font-size: 22px;
+        }
+
+        .ai-grid {
+            display: grid;
+
+            grid-template-columns:
+                1fr 1fr;
+
+            gap: 16px;
+
+            margin-top: 18px;
+        }
+
+        .ai-panel {
+            background:
+                rgba(4, 12, 21, .45);
+
+            border:
+                1px solid var(--line);
+
+            border-radius: 14px;
+
+            padding: 16px;
+        }
+
+        .ai-label {
+            color: var(--muted);
+
+            font-size: 12px;
+
+            text-transform: uppercase;
+
+            letter-spacing: 1px;
+
+            margin-bottom: 6px;
+        }
+
+        .ai-value {
+            font-size: 17px;
+
+            line-height: 1.55;
+        }
+
+        .ai-list {
+            margin: 8px 0 0 20px;
+
+            padding: 0;
+
+            line-height: 1.6;
+        }
+
+        .priority {
+            font-weight: 700;
+        }
+
+        .priority-information {
+            color: var(--accent2);
+        }
+
+        .priority-observe {
+            color: var(--warn);
+        }
+
+        .priority-action {
+            color: #ff9f43;
+        }
+
+        .priority-critical {
+            color: var(--critical);
+        }
+
+        .ai-loading {
+            display: none;
+
+            margin-top: 15px;
+
+            padding: 12px;
+
+            border-radius: 10px;
+
+            background: rgba(85,214,190,.08);
+
+            border: 1px solid rgba(85,214,190,.25);
+
+            color: var(--accent);
+        }
+
+        .ai-error {
+            display: none;
+
+            margin-top: 15px;
+
+            padding: 12px;
+
+            border-radius: 10px;
+
+            background: rgba(255,107,107,.08);
+
+            border: 1px solid rgba(255,107,107,.35);
+
+            color: var(--bad);
+        }
+
+        /* =========================================
+           CHARTS
+        ========================================= */
+
+        .charts {
+            display: grid;
+
+            grid-template-columns:
+                repeat(3, 1fr);
+
+            gap: 16px;
+        }
+
+        .chartbox {
+            height: 320px;
+        }
+
+        .chart-header {
+            display: flex;
+
+            justify-content: space-between;
+
+            align-items: center;
+
+            margin-bottom: 10px;
+        }
+
+        .chart-wrapper {
+            height: 260px;
+        }
+
+        /* =========================================
+           EXPORT
+        ========================================= */
+
+        .export-header {
+            display: flex;
+
+            justify-content: space-between;
+
+            align-items: center;
+
+            gap: 12px;
+
+            flex-wrap: wrap;
+        }
+
+        a.btn {
+            text-decoration: none;
+
+            display: inline-block;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .workbook-scrim {
+            position: fixed;
+            inset: 0;
+            z-index: 200;
+            border: 0;
+            background: rgba(0, 0, 0, .58);
+            display: none;
+        }
+
+        .workbook-scrim.open {
+            display: block;
+        }
+
+        .workbook-sidebar {
+            position: fixed;
+            z-index: 201;
+            top: 0;
+            right: 0;
+            width: min(760px, 94vw);
+            height: 100dvh;
+            display: flex;
+            flex-direction: column;
+            background: #0a1725;
+            border-left: 1px solid var(--line);
+            box-shadow: -18px 0 48px rgba(0, 0, 0, .38);
+            transform: translateX(102%);
+            visibility: hidden;
+            transition: transform .22s ease, visibility .22s;
+        }
+
+        .workbook-sidebar.open {
+            transform: translateX(0);
+            visibility: visible;
+        }
+
+        .workbook-sidebar-head,
+        .workbook-sidebar-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--line);
+        }
+
+        .workbook-sidebar-footer {
+            border-top: 1px solid var(--line);
+            border-bottom: 0;
+        }
+
+        .workbook-sidebar-head h2 {
+            margin: 0;
+            font-size: 18px;
+        }
+
+        .workbook-tabs {
+            display: flex;
+            gap: 7px;
+            padding: 12px 20px;
+            overflow-x: auto;
+            border-bottom: 1px solid var(--line);
+        }
+
+        .workbook-tab {
+            flex: 0 0 auto;
+            border: 1px solid var(--line);
+            border-radius: 7px;
+            background: transparent;
+            color: var(--muted);
+            padding: 8px 10px;
+            cursor: pointer;
+            font: inherit;
+            font-size: 12px;
+        }
+
+        .workbook-tab[aria-pressed="true"] {
+            color: var(--txt);
+            border-color: var(--accent);
+            background: rgba(85, 214, 190, .1);
+        }
+
+        .workbook-meta {
+            min-height: 38px;
+            padding: 10px 20px;
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        .workbook-error {
+            padding: 0 20px 10px;
+            color: var(--bad);
+            font-size: 13px;
+        }
+
+        .workbook-table-wrap {
+            flex: 1;
+            min-height: 0;
+            overflow: auto;
+            border-top: 1px solid var(--line);
+        }
+
+        .workbook-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+
+        .workbook-table th,
+        .workbook-table td {
+            max-width: 260px;
+            padding: 9px 12px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            text-align: left;
+            border-bottom: 1px solid rgba(30, 52, 72, .75);
+        }
+
+        .workbook-table th {
+            position: sticky;
+            top: 0;
+            z-index: 1;
+            color: var(--accent);
+            background: #0a1725;
+        }
+
+        .workbook-table tr:nth-child(even) td {
+            background: rgba(255, 255, 255, .025);
+        }
+
+        .workbook-sidebar-footer .btn:disabled {
+            opacity: .45;
+            cursor: default;
+            transform: none;
+        }
+
+        /* =========================================
+           RESPONSIVE
+        ========================================= */
+
+        @media(max-width:1100px) {
+
+            .grid {
+                grid-template-columns:
+                    repeat(2, 1fr);
+            }
+
+            .charts {
+                grid-template-columns:
+                    1fr;
+            }
+
+            .ai-grid {
+                grid-template-columns:
+                    1fr;
+            }
+        }
+
+        @media(max-width:650px) {
+
+            header {
+                padding: 18px 5%;
+
+                align-items: flex-start;
+
+                gap: 12px;
+
+                flex-direction: column;
+            }
+
+            .header-actions {
+                width: 100%;
+                justify-content: space-between;
+            }
+
+            .grid {
+                grid-template-columns:
+                    1fr;
+            }
+
+            main {
+                padding: 18px 4%;
+            }
+
+            .value {
+                font-size: 26px;
+            }
+
+        }
+
+    </style>
+</head>
+
+
+<body>
+
+<header>
+
+    <div>
+
+        <h1>MQ-135 AI Command Center</h1>
+
+        <small>
+            Single ESP32 · SQLite · SQLAlchemy · Local Ollama · Gemma 3
+        </small>
+
+    </div>
+
+    <div class="header-actions">
+        <button
+            id="workbookOpen"
+            class="btn"
+            type="button"
+            aria-controls="workbookSidebar"
+            aria-expanded="false"
+        >
+            Workbook data
+        </button>
+
+        <div
+            id="server"
+            class="pill"
+        >
+            Connecting...
+        </div>
+    </div>
+
+</header>
+
+<button
+    id="workbookScrim"
+    class="workbook-scrim"
+    type="button"
+    aria-label="Close workbook data sidebar"
+    tabindex="-1"
+></button>
+
+<aside
+    id="workbookSidebar"
+    class="workbook-sidebar"
+    aria-hidden="true"
+    aria-labelledby="workbookTitle"
+>
+    <div class="workbook-sidebar-head">
+        <div>
+            <h2 id="workbookTitle">Workbook data</h2>
+            <small>MQ135_5_Locations_1Hour_Analytics.xlsx</small>
+        </div>
+        <button id="workbookClose" class="btn" type="button" aria-label="Close workbook data">Close</button>
+    </div>
+
+    <nav class="workbook-tabs" aria-label="Workbook sheets">
+        <button class="workbook-tab" type="button" data-workbook-sheet="Analytics_Summary" aria-pressed="true">Analytics</button>
+        <button class="workbook-tab" type="button" data-workbook-sheet="Hour_Summary" aria-pressed="false">Hourly</button>
+        <button class="workbook-tab" type="button" data-workbook-sheet="Minute_Averages" aria-pressed="false">Minute averages</button>
+        <button class="workbook-tab" type="button" data-workbook-sheet="Minute_PPM_Comparison" aria-pressed="false">Location comparison</button>
+        <button class="workbook-tab" type="button" data-workbook-sheet="Raw_Second_Data" aria-pressed="false">Raw samples</button>
+    </nav>
+
+    <div id="workbookMeta" class="workbook-meta" aria-live="polite">Select a sheet to view its data.</div>
+    <div id="workbookError" class="workbook-error" role="alert"></div>
+
+    <div class="workbook-table-wrap">
+        <table class="workbook-table">
+            <thead id="workbookHead"></thead>
+            <tbody id="workbookBody"></tbody>
+        </table>
+    </div>
+
+    <div class="workbook-sidebar-footer">
+        <button id="workbookPrevious" class="btn" type="button" disabled>Previous</button>
+        <span id="workbookPage" class="muted">Page 1</span>
+        <button id="workbookNext" class="btn" type="button" disabled>Next</button>
+    </div>
+</aside>
+
+
+<main>
+
+
+    <!-- =========================================
+         LIVE SENSOR CARDS
+    ========================================== -->
+
+    <div class="grid">
+
+        <div class="card">
+
+            <small>Current Estimated PPM</small>
+
+            <div
+                id="ppm"
+                class="value"
+            >
+                --
+            </div>
+
+        </div>
+
+
+        <div class="card">
+
+            <small>Temperature</small>
+
+            <div
+                id="temp"
+                class="value"
+            >
+                --
+            </div>
+
+        </div>
+
+
+        <div class="card">
+
+            <small>Humidity</small>
+
+            <div
+                id="hum"
+                class="value"
+            >
+                --
+            </div>
+
+        </div>
+
+
+        <div class="card">
+
+            <small>Air Quality Status</small>
+
+            <div
+                id="status"
+                class="value status"
+            >
+                --
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- =========================================
+         LIVE DATA
+    ========================================== -->
+
+    <div class="section card">
+
+        <div class="live-row">
+
+            <div>
+
+                <b>
+                    <span class="live-dot"></span>
+                    Live Sensor Stream
+                </b>
+
+                <div class="muted">
+                    Latest ESP32 reading stored in SQLite
+                </div>
+
+            </div>
+
+            <span
+                id="lastUpdate"
+                class="pill"
+            >
+                Waiting...
+            </span>
+
+        </div>
+
+    </div>
+
+
+    <!-- =========================================
+         AI COMMAND CENTER
+    ========================================== -->
+
+    <div class="section card">
+
+        <div class="ai-header">
+
+            <div class="ai-title">
+
+                <div class="ai-icon">
+                    🤖
+                </div>
+
+                <div>
+
+                    <h2 style="margin:0">
+                        AI Air Quality Analysis
+                    </h2>
+
+                    <div class="muted">
+                        Local Ollama · Gemma 3 · Statistical sensor analysis
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <div class="links">
+
+                <button
+                    id="workbookBtn"
+                    class="btn btn-ai"
+                    onclick="runAI('workbook')"
+                >
+                    Analyze Workbook
+                </button>
+
+                <button
+                    id="minuteBtn"
+                    class="btn btn-ai"
+                    onclick="runAI('minute')"
+                >
+                    Analyze Minute
+                </button>
+
+                <button
+                    id="hourBtn"
+                    class="btn btn-ai"
+                    onclick="runAI('hour')"
+                >
+                    Analyze Hour
+                </button>
+
+                <button
+                    id="dayBtn"
+                    class="btn btn-ai"
+                    onclick="runAI('day')"
+                >
+                    Analyze Day
+                </button>
+
+            </div>
+
+        </div>
+
+
+        <div
+            id="aiLoading"
+            class="ai-loading"
+        >
+            🤖 Gemma 3 is analyzing sensor data...
+        </div>
+
+
+        <div
+            id="aiError"
+            class="ai-error"
+        >
+        </div>
+
+
+        <div class="ai-grid">
+
+
+            <!-- LEFT -->
+
+            <div class="ai-panel">
+
+                <div class="ai-label">
+                    Overall Status
+                </div>
+
+                <div
+                    id="aiStatus"
+                    class="ai-value"
+                >
+                    Waiting for analysis
+                </div>
+
+
+                <br>
+
+
+                <div class="ai-label">
+                    Priority
+                </div>
+
+                <div
+                    id="priority"
+                    class="ai-value priority"
+                >
+                    --
+                </div>
+
+
+                <br>
+
+
+                <div class="ai-label">
+                    Problem Detected
+                </div>
+
+                <div
+                    id="problem"
+                    class="ai-value"
+                >
+                    No AI analysis available yet.
+                </div>
+
+            </div>
+
+
+            <!-- RIGHT -->
+
+            <div class="ai-panel">
+
+                <div class="ai-label">
+                    Evidence
+                </div>
+
+                <div
+                    id="evidence"
+                    class="ai-value"
+                >
+                    --
+                </div>
+
+
+                <br>
+
+
+                <div class="ai-label">
+                    Possible Causes
+                </div>
+
+                <div
+                    id="causes"
+                    class="ai-value"
+                >
+                    --
+                </div>
+
+            </div>
+
+
+            <!-- RECOMMENDATION -->
+
+            <div class="ai-panel">
+
+                <div class="ai-label">
+                    Recommended Modification
+                </div>
+
+                <div
+                    id="recommendation"
+                    class="ai-value"
+                >
+                    --
+                </div>
+
+            </div>
+
+
+            <!-- VERIFICATION -->
+
+            <div class="ai-panel">
+
+                <div class="ai-label">
+                    Verification
+                </div>
+
+                <div
+                    id="verification"
+                    class="ai-value"
+                >
+                    --
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- =========================================
+         CHARTS
+    ========================================== -->
+
+    <div class="section charts">
+
+
+        <div class="card chartbox">
+
+            <div class="chart-header">
+
+                <b>
+                    Minute · Last 60
+                </b>
+
+                <span class="pill">
+                    60 min
+                </span>
+
+            </div>
+
+            <div class="chart-wrapper">
+
+                <canvas id="c1"></canvas>
+
+            </div>
+
+        </div>
+
+
+        <div class="card chartbox">
+
+            <div class="chart-header">
+
+                <b>
+                    Hour · Last 48
+                </b>
+
+                <span class="pill">
+                    48 hr
+                </span>
+
+            </div>
+
+            <div class="chart-wrapper">
+
+                <canvas id="c2"></canvas>
+
+            </div>
+
+        </div>
+
+
+        <div class="card chartbox">
+
+            <div class="chart-header">
+
+                <b>
+                    Day · Last 30
+                </b>
+
+                <span class="pill">
+                    30 days
+                </span>
+
+            </div>
+
+            <div class="chart-wrapper">
+
+                <canvas id="c3"></canvas>
+
+            </div>
+
+        </div>
+
+
+    </div>
+
+
+    <!-- =========================================
+         EXPORT
+    ========================================== -->
+
+    <div class="section card">
+
+        <div class="export-header">
+
+            <div>
+
+                <b>
+                    Data Export
+                </b>
+
+                <div class="muted">
+                    Download raw and aggregated SQLite data
+                </div>
+
+            </div>
+
+
+            <div class="links">
+
+                <a
+                    class="btn"
+                    href="/api/export/raw.csv"
+                >
+                    Raw CSV
+                </a>
+
+                <a
+                    class="btn"
+                    href="/api/export/minute.csv"
+                >
+                    Minute CSV
+                </a>
+
+                <a
+                    class="btn"
+                    href="/api/export/hour.csv"
+                >
+                    Hour CSV
+                </a>
+
+                <a
+                    class="btn"
+                    href="/api/export/day.csv"
+                >
+                    Day CSV
+                </a>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+</main>
+
+
+<script>
+
+    /* =====================================================
+       GLOBAL
+    ===================================================== */
+
+    let charts = {};
+
+
+    const $ = id =>
+        document.getElementById(id);
+
+
+    function fmt(value) {
+
+        if (
+            value === null ||
+            value === undefined ||
+            value === ""
+        ) {
+            return "--";
+        }
+
+        const n = Number(value);
+
+        if (Number.isNaN(n)) {
+            return "--";
+        }
+
+        return n.toFixed(1);
+    }
+
+
+    function formatIstTime(date) {
+
+        return new Intl.DateTimeFormat(
+            "en-IN",
+            {
+                timeZone: "Asia/Kolkata",
+                hour: "2-digit",
+                minute: "2-digit",
+                second: "2-digit",
+                hour12: false
+            }
+        ).format(date);
+
+    }
+
+
+    /* =====================================================
+       SAFE TEXT
+    ===================================================== */
+
+    function safeText(value) {
+
+        if (
+            value === null ||
+            value === undefined ||
+            value === ""
+        ) {
+            return "--";
+        }
+
+        return String(value);
+    }
+
+
+    /* =====================================================
+       FORMAT AI FIELD
+    ===================================================== */
+
+    function formatAIField(value) {
+
+        if (
+            value === null ||
+            value === undefined ||
+            value === ""
+        ) {
+            return "--";
+        }
+
+
+        /*
+         Sometimes Ollama returns an array:
+
+         [
+            "Evidence one",
+            "Evidence two"
+         ]
+
+         Sometimes the Python database stores it
+         as a string.
+
+         Handle both.
+        */
+
+        if (Array.isArray(value)) {
+
+            return value
+                .map(x => "• " + String(x))
+                .join("<br>");
+
+        }
+
+
+        let text = String(value);
+
+
+        /*
+         Handle Python list string:
+
+         ['one', 'two']
+        */
+
+        if (
+            text.startsWith("[") &&
+            text.endsWith("]")
+        ) {
+
+            try {
+
+                let parsed =
+                    JSON.parse(
+                        text
+                            .replace(/'/g, '"')
+                    );
+
+                if (Array.isArray(parsed)) {
+
+                    return parsed
+                        .map(x => "• " + String(x))
+                        .join("<br>");
+
+                }
+
+            }
+
+            catch(e) {
+                // Keep original text
+            }
+
+        }
+
+
+        return text
+            .replace(/\n/g, "<br>");
+
+    }
+
+
+    /* =====================================================
+       CHART
+    ===================================================== */
+
+    function createChart(
+        canvasId,
+        labels,
+        data,
+        title
+    ) {
+
+        if (charts[canvasId]) {
+
+            charts[canvasId].destroy();
+
+        }
+
+
+        charts[canvasId] = new Chart(
+            $(canvasId),
+            {
+
+                type: "line",
+
+                data: {
+
+                    labels: labels,
+
+                    datasets: [
+
+                        {
+
+                            label: title,
+
+                            data: data,
+
+                            fill: true,
+
+                            tension: 0.28,
+
+                            borderWidth: 2,
+
+                            pointRadius: 2
+
+                        }
+
+                    ]
+
+                },
+
+                options: {
+
+                    responsive: true,
+
+                    maintainAspectRatio: false,
+
+                    interaction: {
+
+                        intersect: false,
+
+                        mode: "index"
+
+                    },
+
+                    plugins: {
+
+                        legend: {
+                            display: false
+                        }
+
+                    },
+
+                    scales: {
+
+                        x: {
+
+                            ticks: {
+
+                                color:
+                                    "#91a6b8",
+
+                                maxTicksLimit: 8
+
+                            },
+
+                            grid: {
+
+                                color:
+                                    "rgba(145,166,184,.08)"
+
+                            }
+
+                        },
+
+                        y: {
+
+                            beginAtZero: true,
+
+                            ticks: {
+
+                                color:
+                                    "#91a6b8"
+
+                            },
+
+                            grid: {
+
+                                color:
+                                    "rgba(145,166,184,.08)"
+
+                            }
+
+                        }
+
+                    }
+
+                }
+
+            }
+        );
+
+    }
+
+
+    /* =====================================================
+       REFRESH DASHBOARD
+    ===================================================== */
+
+    async function refresh() {
+
+        try {
+
+            const response =
+                await fetch(
+                    "/api/data",
+                    {
+                        cache: "no-store"
+                    }
+                );
+
+
+            if (!response.ok) {
+
+                throw new Error(
+                    "Server returned " +
+                    response.status
+                );
+
+            }
+
+
+            const data =
+                await response.json();
+
+
+            /*
+             SERVER STATUS
+            */
+
+            $("server").textContent =
+                "● LOCAL SERVER ONLINE";
+
+            $("server").className =
+                "pill online";
+
+
+            /*
+             CURRENT SENSOR
+            */
+
+            if (
+                data.raw &&
+                data.raw.length
+            ) {
+
+                const r =
+                    data.raw[
+                        data.raw.length - 1
+                    ];
+
+
+                $("ppm").textContent =
+                    fmt(r.ppm);
+
+
+                $("temp").textContent =
+                    fmt(r.temperature) +
+                    " °C";
+
+
+                $("hum").textContent =
+                    fmt(r.humidity) +
+                    " %";
+
+
+                $("status").textContent =
+                    safeText(r.status);
+
+
+                $("lastUpdate").textContent =
+                    formatIstTime(
+                        new Date()
+                    );
+
+            }
+
+
+            /*
+             MINUTE CHART
+            */
+
+            if (data.minute) {
+
+                createChart(
+
+                    "c1",
+
+                    data.minute.map(
+                        x =>
+                            formatDate(
+                                x.period_start,
+                                "time"
+                            )
+                    ),
+
+                    data.minute.map(
+                        x =>
+                            Number(
+                                x.ppm_avg || 0
+                            )
+                    ),
+
+                    "PPM AVG"
+
+                );
+
+            }
+
+
+            /*
+             HOUR CHART
+            */
+
+            if (data.hour) {
+
+                createChart(
+
+                    "c2",
+
+                    data.hour.map(
+                        x =>
+                            formatDate(
+                                x.period_start,
+                                "hour"
+                            )
+                    ),
+
+                    data.hour.map(
+                        x =>
+                            Number(
+                                x.ppm_avg || 0
+                            )
+                    ),
+
+                    "PPM AVG"
+
+                );
+
+            }
+
+
+            /*
+             DAY CHART
+            */
+
+            if (data.day) {
+
+                createChart(
+
+                    "c3",
+
+                    data.day.map(
+                        x =>
+                            formatDate(
+                                x.period_start,
+                                "day"
+                            )
+                    ),
+
+                    data.day.map(
+                        x =>
+                            Number(
+                                x.ppm_avg || 0
+                            )
+                    ),
+
+                    "PPM AVG"
+
+                );
+
+            }
+
+
+            /*
+             LATEST AI RESULT
+            */
+
+            if (
+                data.ai &&
+                data.ai.length
+            ) {
+
+                showAI(data.ai[0]);
+
+            }
+
+        }
+
+        catch(error) {
+
+            console.error(
+                "Dashboard error:",
+                error
+            );
+
+
+            $("server").textContent =
+                "● SERVER OFFLINE";
+
+            $("server").className =
+                "pill offline";
+
+        }
+
+    }
+
+
+    /* =====================================================
+       DATE FORMAT
+    ===================================================== */
+
+    function formatDate(
+        value,
+        type
+    ) {
+
+        if (!value) {
+            return "--";
+        }
+
+
+        const d =
+            new Date(value);
+
+
+        if (Number.isNaN(d.getTime())) {
+
+            return String(value);
+
+        }
+
+
+        if (type === "time") {
+
+            return new Intl.DateTimeFormat(
+                "en-IN",
+                {
+                    timeZone: "Asia/Kolkata",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    hour12: false
+                }
+            ).format(d);
+
+        }
+
+
+        if (type === "hour") {
+
+            return new Intl.DateTimeFormat(
+                "en-IN",
+                {
+                    timeZone: "Asia/Kolkata",
+                    month: "short",
+                    day: "numeric",
+                    hour: "2-digit",
+                    hour12: false
+                }
+            ).format(d);
+
+        }
+
+
+        return new Intl.DateTimeFormat(
+            "en-IN",
+            {
+                timeZone: "Asia/Kolkata",
+                month: "short",
+                day: "numeric"
+            }
+        ).format(d);
+
+    }
+
+
+    /* =====================================================
+       SHOW AI
+    ===================================================== */
+
+    function showAI(x) {
+
+        if (!x) {
+            return;
+        }
+
+
+        $("aiStatus").textContent =
+            safeText(
+                x.overall_status
+            );
+
+
+        $("problem").textContent =
+            safeText(
+                x.problem
+            );
+
+
+        $("evidence").innerHTML =
+            formatAIField(
+                x.evidence
+            );
+
+
+        $("causes").innerHTML =
+            formatAIField(
+                x.causes
+            );
+
+
+        $("recommendation").innerHTML =
+            formatAIField(
+                x.recommendation
+            );
+
+
+        $("verification").innerHTML =
+            formatAIField(
+                x.verification
+            );
+
+
+        const priority =
+            safeText(
+                x.priority
+            ).toUpperCase();
+
+
+        $("priority").textContent =
+            priority;
+
+
+        /*
+         Priority styling
+        */
+
+        $("priority").className =
+            "ai-value priority";
+
+
+        if (
+            priority === "INFORMATION"
+        ) {
+
+            $("priority").classList.add(
+                "priority-information"
+            );
+
+        }
+
+        else if (
+            priority === "OBSERVE"
+        ) {
+
+            $("priority").classList.add(
+                "priority-observe"
+            );
+
+        }
+
+        else if (
+            priority === "ACTION"
+        ) {
+
+            $("priority").classList.add(
+                "priority-action"
+            );
+
+        }
+
+        else if (
+            priority === "CRITICAL"
+        ) {
+
+            $("priority").classList.add(
+                "priority-critical"
+            );
+
+        }
+
+    }
+
+
+    /* =====================================================
+       RUN AI
+    ===================================================== */
+
+    async function runAI(period) {
+
+        const buttonMap = {
+
+            workbook:
+                $("workbookBtn"),
+
+            minute:
+                $("minuteBtn"),
+
+            hour:
+                $("hourBtn"),
+
+            day:
+                $("dayBtn")
+
+        };
+
+
+        const button =
+            buttonMap[period];
+
+
+        if (button) {
+
+            button.disabled = true;
+
+        }
+
+
+        $("aiLoading").style.display =
+            "block";
+
+
+        $("aiError").style.display =
+            "none";
+
+
+        try {
+
+            /*
+             IMPORTANT:
+
+             Use the existing backend route:
+
+             /api/ai/minute
+             /api/ai/hour
+             /api/ai/day
+
+             Do NOT call /api/ai
+            */
+
+            const response =
+                await fetch(
+                    "/api/ai/" + period,
+                    {
+                        method: "POST",
+
+                        headers: {
+                            "Content-Type":
+                                "application/json"
+                        }
+                    }
+                );
+
+
+            const data =
+                await response.json();
+
+
+            if (!response.ok) {
+
+                throw new Error(
+                    data.error ||
+                    "AI server error"
+                );
+
+            }
+
+
+            if (
+                data.insight
+            ) {
+
+                showAI(
+                    data.insight
+                );
+
+            }
+
+            else {
+
+                throw new Error(
+                    "No AI insight was returned. " +
+                    "Make sure the selected " +
+                    period +
+                    " statistics exist."
+                );
+
+            }
+
+        }
+
+        catch(error) {
+
+            console.error(
+                "AI error:",
+                error
+            );
+
+
+            $("aiError").textContent =
+                "AI analysis failed: " +
+                error.message;
+
+
+            $("aiError").style.display =
+                "block";
+
+        }
+
+        finally {
+
+            if (button) {
+
+                button.disabled = false;
+
+            }
+
+
+            $("aiLoading").style.display =
+                "none";
+
+        }
+
+    }
+
+
+    /* =====================================================
+       WORKBOOK SIDEBAR
+    ===================================================== */
+
+    const workbookPageSize = 50;
+    let workbookSheet = "Analytics_Summary";
+    let workbookOffset = 0;
+
+
+    function setWorkbookSidebar(open) {
+
+        $("workbookSidebar").classList.toggle("open", open);
+        $("workbookScrim").classList.toggle("open", open);
+        $("workbookSidebar").setAttribute("aria-hidden", String(!open));
+        $("workbookOpen").setAttribute("aria-expanded", String(open));
+
+        if (open) {
+            loadWorkbookSheet(workbookSheet, workbookOffset);
+        }
+
+    }
+
+
+    function renderWorkbookRows(columns, rows) {
+
+        const headerRow = document.createElement("tr");
+        const body = $("workbookBody");
+        const head = $("workbookHead");
+
+        head.replaceChildren();
+        body.replaceChildren();
+
+        for (const column of columns) {
+            const cell = document.createElement("th");
+            cell.scope = "col";
+            cell.textContent = column;
+            headerRow.appendChild(cell);
+        }
+
+        head.appendChild(headerRow);
+
+        for (const row of rows) {
+            const tableRow = document.createElement("tr");
+
+            for (const column of columns) {
+                const cell = document.createElement("td");
+                const value = row[column];
+                cell.textContent = value === null || value === undefined
+                    ? "--"
+                    : String(value);
+                tableRow.appendChild(cell);
+            }
+
+            body.appendChild(tableRow);
+        }
+
+    }
+
+
+    async function loadWorkbookSheet(sheet, offset = 0) {
+
+        workbookSheet = sheet;
+        workbookOffset = offset;
+        $("workbookMeta").textContent = "Loading workbook data...";
+        $("workbookError").textContent = "";
+
+        document.querySelectorAll("[data-workbook-sheet]").forEach(button => {
+            button.setAttribute(
+                "aria-pressed",
+                String(button.dataset.workbookSheet === sheet)
+            );
+        });
+
+        try {
+            const params = new URLSearchParams({
+                sheet,
+                offset: String(offset),
+                limit: String(workbookPageSize)
+            });
+            const response = await fetch("/api/workbook?" + params, {
+                cache: "no-store"
+            });
+            const result = await response.json();
+
+            if (!response.ok) {
+                throw new Error(result.error || "Workbook request failed.");
+            }
+
+            renderWorkbookRows(result.columns, result.rows);
+
+            const firstRow = result.total === 0 ? 0 : result.offset + 1;
+            const lastRow = result.offset + result.rows.length;
+            $("workbookMeta").textContent =
+                `${result.sheet.replaceAll("_", " ")} · ${firstRow}-${lastRow} of ${result.total} rows`;
+            $("workbookPage").textContent =
+                `Page ${Math.floor(result.offset / result.limit) + 1}`;
+            $("workbookPrevious").disabled = result.offset === 0;
+            $("workbookNext").disabled = result.offset + result.rows.length >= result.total;
+        }
+
+        catch (error) {
+            $("workbookMeta").textContent = "Workbook data unavailable.";
+            $("workbookError").textContent = error.message;
+            $("workbookHead").replaceChildren();
+            $("workbookBody").replaceChildren();
+            $("workbookPrevious").disabled = true;
+            $("workbookNext").disabled = true;
+        }
+
+    }
+
+
+    $("workbookOpen").addEventListener("click", () => setWorkbookSidebar(true));
+    $("workbookClose").addEventListener("click", () => setWorkbookSidebar(false));
+    $("workbookScrim").addEventListener("click", () => setWorkbookSidebar(false));
+    $("workbookPrevious").addEventListener("click", () => {
+        loadWorkbookSheet(workbookSheet, Math.max(0, workbookOffset - workbookPageSize));
+    });
+    $("workbookNext").addEventListener("click", () => {
+        loadWorkbookSheet(workbookSheet, workbookOffset + workbookPageSize);
+    });
+    document.querySelectorAll("[data-workbook-sheet]").forEach(button => {
+        button.addEventListener("click", () => loadWorkbookSheet(button.dataset.workbookSheet, 0));
+    });
+    document.addEventListener("keydown", event => {
+        if (event.key === "Escape" && $("workbookSidebar").classList.contains("open")) {
+            setWorkbookSidebar(false);
+        }
+    });
+
+
+    /* =====================================================
+       START DASHBOARD
+    ===================================================== */
+
+    refresh();
+
+
+    /*
+     Refresh live data every 3 seconds.
+    */
+
+    setInterval(
+        refresh,
+        3000
+    );
+
+</script>
+
+</body>
+</html>
